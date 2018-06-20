@@ -19,5 +19,5 @@ Returnes wavelength dependent graph of the Mueller Matrix eigenvalues
 returns two matrices L_m and L_u. L_m is the mean value of the Mueller element and L_u is the uncertainty of this value.
 
 4)Polar decomposition:
-
+test
 Returns Diatennuation matrix, retardance matrix, and depolarization matrix.
