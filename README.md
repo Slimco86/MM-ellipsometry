@@ -1,10 +1,23 @@
 # MM-ellipsometry
-My first project, which allow fast visualization and further decomposition of measured Mueller Matrices.
+Small library, which allow fast visualization and further decomposition of measured Mueller Matrices.
 Written on Python3.
 
-Takes *.dat files created by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, 
-with one or several angles of incidence and complete azimuthal rotation of the smaple with the step of 5 degrees. 
+Takes *.dat files created and formated by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, 
+with one or several angles of incidence and one or complete azimuthal rotation of the smaple with the step of N degrees. 
 
+One can perform Cloude, Differential and Polar decomposition of the matrices and visualize the result in fast and convinient manner.
+
+For example one can visualize the data at specific azimuthal or incidence angle of specific elements, or plot the complete Mueller matrix.
+![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Depol.png)
+
+Complete azimuthal rotation can also be easily visualized:
+
+![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Fig2.png)
+
+
+
+
+Basic GUI is avaliable if you run the GUI version.
 User can choose between options:
 
 1) Plot Mueller Matrices
