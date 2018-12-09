@@ -1,5 +1,5 @@
 # MM-ellipsometry
-Small library, which allow fast visualization and further decomposition of measured Mueller Matrices.
+Small library, which allows fast visualization and further decomposition of measured Mueller Matrices.
 Written on Python3.
 
 Takes *.dat files created and formated by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, 
@@ -13,6 +13,8 @@ For example one can visualize the data at specific azimuthal or incidence angle 
 Complete azimuthal rotation can also be easily visualized:
 
 ![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Fig2.png)
+
+The depolarization index, or degree of polarization can be easily calculated with dedicated fuctions. The outcomming Stokes vector can be calculated given an incoming Stokes vector. One can also check the physicality of the Mueller matrix and find its Hermitian representation.
 
 
 
