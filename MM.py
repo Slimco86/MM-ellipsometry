@@ -82,7 +82,7 @@ class MM():
 		
 		
 #*****************************************************************************************************************#
-	def ADDA_read(self,directory,Norm):
+	def ADDA_read(self,directory,Norm,Azimuthal,mode):
 		'''
 		Reads data from a single file with the filename from the given directory, in range between wvlcutofmin,wvlcutofmax.
 		
@@ -99,7 +99,7 @@ class MM():
 			folders=os.listdir(directory)
 			#print(folders)
 			for folder in folders:
-				print(folder)
+				print('Processing folder: {}'.format(folder))
 				with open(directory+'/'+folder+'/'+'mueller') as f:
 					for lines in f:
 						if lines.startswith('theta'):
@@ -111,21 +111,37 @@ class MM():
 							if AOI not in self.data.keys():
 								self.data[AOI]=dict()
 						
+							if Azimuthal:
+								AZI=float(re.split(r'_',folder)[1])
+								if AZI not in self.data[AOI].keys():
+									self.data[AOI][AZI]=dict()
+									
+								wvl=float(re.split(r'_',folder)[0])
+								if wvl not in self.data[AOI][AZI].keys():
+									self.data[AOI][AZI][wvl]=list()
 								
-							AZI=float(float(lines[0]))
-							if AZI not in self.data[AOI].keys():
-								self.data[AOI][AZI]=dict()
+								for i in range(1,17):
+									if mode=='Trans':
+										if float(lines[0])==0:
+											self.data[AOI][AZI][wvl].append(float(lines[i]))
+									elif mode=='Refl':
+										if float(lines[0])==180:
+											self.data[AOI][AZI][wvl].append(float(lines[i]))
+							else:
+								AZI=float(float(lines[0]))
+								if AZI not in self.data[AOI].keys():
+									self.data[AOI][AZI]=dict()
 						
 								
 								
-							wvl=float(folder)
-							if wvl not in self.data[AOI][AZI].keys():
-								self.data[AOI][AZI][wvl]=list()
+								wvl=float(folder)
+								if wvl not in self.data[AOI][AZI].keys():
+									self.data[AOI][AZI][wvl]=list()
 						
 						
 						
-							for i in range(1,17):
-								self.data[AOI][AZI][wvl].append(float(lines[i]))
+								for i in range(1,17):
+									self.data[AOI][AZI][wvl].append(float(lines[i]))
 						
 						
 				os.chdir(directory)
@@ -135,7 +151,7 @@ class MM():
 		for AOI in sorted(self.data.keys()):
 			for azi in sorted(self.data[AOI].keys()):
 				for wl in sorted(self.data[AOI][azi].keys()):
-					if Norm==True:
+					if Norm:
 						m11=self.data[AOI][azi][wl][0]
 						for i in range(0,16):
 							self.data[AOI][azi][wl][i]=self.data[AOI][azi][wl][i]/m11
@@ -146,7 +162,7 @@ class MM():
 		
 		
 #*****************************************************************************************************************#
-	def Plot(self,what,angle,title,mult):
+	def Plot(self,what,angle,title,mult,wvl_min,wvl_max):
 		'''
 		Plot data specified as what parameter. The title is the prefix (type of data) of the titel.
 		'''
@@ -190,20 +206,25 @@ class MM():
 		mpl.rcParams['ytick.labelsize'] = 15
 		mpl.rcParams['legend.fontsize'] = 15
 		
-		datax4=['mm12','mm21','mm13','mm31','mm24','mm42']
-		datax10=['mm32','mm23',]
-		datax100=['mm14','mm41']
+		
+		datax4=['mm12','mm13','mm21','mm31','mm24','mm34','mm42','mm43']
+		datax10=['mm23','mm32','mm14','mm41']
+		datax100=[]
 		diag=['mm11','mm22','mm33','mm44']
 		
 		#saveDirectory = 'D:/Ievgen Ell/Measurements/NanoDiscs/MM_transmition/OD5/result_MM_plot/'
 		#if not os.path.isdir(saveDirectory):
 		#os.makedirs(saveDirectory)
 		print('Building plot')
+		
 		for AOI in sorted(muellerGraphs.keys()):
 			if AOI==angle:
 				fig, axs = plt.subplots(4, 4, subplot_kw=dict(projection='polar'))	
 				for element, ax in zip(sorted(muellerGraphs[AOI].keys()), iter(axs.reshape(-1))):
-					data = np.reshape(muellerGraphs[AOI][element], (azimuth.size, zenith.size)).T
+					try:
+						data = np.reshape(muellerGraphs[AOI][element], (azimuth.size, zenith.size)).T
+					except ValueError:
+						data = np.reshape(muellerGraphs[AOI][element], (azimuth.size-1, zenith.size)).T
 					if element in datax4:
 						data=data*4*mult
 						ax.set_title('x{}'.format(mult*4))
@@ -211,13 +232,13 @@ class MM():
 						data=data*10*mult
 						ax.set_title('x{}'.format(mult*10))
 					elif element in datax100:
-						data=data*100*mult
+						data=data*10*mult
 						ax.set_title('x{}'.format(mult*100))
-					#elif element in diag:
-						#data=data*10
-						#ax.set_title('x10')
+					elif element in diag and what=='Lu':
+						data=data*10*mult
+						ax.set_title('x{}'.format(mult*100))
 						
-					
+					ax.set_ylim([wvl_min,wvl_max])
 					cs = ax.contourf(azimuth, zenith, data, 50, vmin=-1,vmax=1,cmap='jet')
 					ax.grid(False)
 					#ax.set_title('%s'%(element),fontsize=8, horizontalalignment='left', verticalalignment='bottom')		   
@@ -236,7 +257,9 @@ class MM():
 				plt.show()
 				
 			else:
+				print('No such an angle')
 				continue
+		plt.show()
 		print('Finished!!!!!!!!!')
 
 #*****************************************************************************************************************#
@@ -535,6 +558,7 @@ class MM():
 		Differential decomposition is performed on a given data. The Lm and Lu are stored in a self.Lm and self.Lu
 		'''
 		print("Differential decomposition")
+		print('Differential decomposition is only valid for 0 AOI, so only this AOI will be decomposed')
 		g=[1,0,0,0,
 		0,-1,0,0,
 		0,0,-1,0,
@@ -551,7 +575,7 @@ class MM():
 				L_m[AOI]=dict()
 				L_u[AOI]=dict()
 			for AZI in sorted(self.data[AOI].keys()):
-				if AOI not in L[AOI].keys():
+				if AZI not in L[AOI].keys():
 					L[AOI][AZI]=dict()
 					L_m[AOI][AZI]=dict()
 					L_u[AOI][AZI]=dict()			
@@ -560,15 +584,16 @@ class MM():
 						L[AOI][AZI][wvl]=np.empty([4,4],dtype=complex)
 						L_m[AOI][AZI][wvl]=np.empty([4,4],dtype=complex)
 						L_u[AOI][AZI][wvl]=np.empty([4,4],dtype=complex)
-					if AOI=='0.000' or AOI=='0.0':
+					if AOI=='0.000' or AOI=='0.0' or AOI==0:
 						mm=np.copy(self.data[AOI][AZI][wvl])
 						mm[0][0]=1.0
 							
 						L[AOI][AZI][wvl] = logm(mm)	   # Right option 
 						L_m[AOI][AZI][wvl]=1/2*(L[AOI][AZI][wvl]-(G@np.transpose(L[AOI][AZI][wvl]))@G)
 						L_u[AOI][AZI][wvl]=1/2*(L[AOI][AZI][wvl]+(G@np.transpose(L[AOI][AZI][wvl]))@G)
+						L_u[AOI][AZI][wvl]=L_u[AOI][AZI][wvl]-np.diag([L_u[AOI][AZI][wvl][0][0],L_u[AOI][AZI][wvl][0][0],L_u[AOI][AZI][wvl][0][0],L_u[AOI][AZI][wvl][0][0]])
 					else:
-						print('Differential decomposition is only valid for 0 AOI')
+						continue
 		
 				
 		self.Lm=L_m
@@ -662,6 +687,7 @@ class MM():
 		Calculate depolarization index from a MM at AOI and AZI.
 		Returns a 2D plot of the depolarization index versus WVL.
 		'''
+		
 		DI=[]
 		for wvl in self.data[AOI][AZI].keys():				
 			DI.append(np.sqrt((np.trace(np.dot(self.data[AOI][AZI][wvl].T,self.data[AOI][AZI][wvl]))-(self.data[AOI][AZI][wvl][0][0])**2)/3))
@@ -672,6 +698,7 @@ class MM():
 		plt.legend()
 		plt.xlabel('Wavelength (nm)',fontsize=18)
 		plt.show()
+		self.DI=DI
 #*****************************************************************************************************************#	
 	def polConvRead(self,directory, fileName,minWvl):
 		'''
@@ -767,7 +794,7 @@ class MM():
 			
 			
 		#Plot Psi_ps
-		if type=='ps':
+		elif type=='ps':
 			# Plot Psi_ps
 			for AOI in sorted(self.Aps.keys()):
 				data=[]
@@ -942,7 +969,7 @@ class MM():
 #******************************************************************************************************************************************#
 
 
-	def Dispersion(self,Az,wvlcutofmin,wvlcutofmax,cMap,scalemax):
+	def Dispersion(self,Az,wvlcutofmin,wvlcutofmax,cMap,scalemax,total):
 		'''
 		Calculates P and S polarization intensities based on the Mueller matrix data.
 		Returns a dispersion plot of P and S light.
@@ -989,7 +1016,7 @@ class MM():
 		
 		for el in AOIsin:
 			for wvl in wvls:
-				k.append((2*m.pi/wvl)*el)
+				k.append((2*m.pi/wvl)*el*1e2)
 		k=np.asarray(k)
 		k=k.reshape(len(k)/len(wvls),len(wvls))
 		
@@ -1005,22 +1032,32 @@ class MM():
 		energy=energy.reshape([len(AOIs),len(energy)/len(AOIs)])
 		wvls=np.reshape(wvls,[len(AOIs),len(wvls)/len(AOIs)])
 		
-		# Plot P polarization
-		fig=plt.figure()
-		plt.subplot(121)
-		cp = plt.contourf(k, energy, dataP,500,vmin=0,vmax=scalemax,cmap=cMap)
-		plt.xlabel(r'$K_{\parallel} (10^{9} m^{-1})$',size=20)
-		plt.ylabel('Energy (eV)',size=20)
-		plt.title('P-pol.')
-		
-		
-		#Plot S polarization
-		plt.subplot(122)
-		cp = plt.contourf(k, energy, dataS,500,vmin=0,vmax=scalemax,cmap=cMap)
-		plt.xlabel(r'$K_{\parallel} (10^{9} m^{-1})$',size=20)
-		plt.ylabel('Energy (eV)',size=20)
-		plt.title('S-pol.')
-		
+		if total:
+			data=(dataS+dataP)/2
+			fig=plt.figure()
+			cp = plt.contourf(k, energy, data,500,vmin=0,vmax=scalemax,cmap=cMap)
+			plt.xlabel(r'$K_{\parallel} ( m^{-7})$',size=20)
+			plt.ylabel('Energy (eV)',size=20)
+			plt.title('')
+		else:
+			# Plot P polarization
+			fig=plt.figure()
+			plt.subplot(121)
+			cp = plt.contourf(k, energy, dataP,500,vmin=0,vmax=scalemax,cmap=cMap)
+			plt.xlabel(r'$K_{\parallel} ( m^{-7})$',size=20)
+			plt.ylabel('Energy (eV)',size=20)
+			plt.title('P-pol.')
+			
+			
+			#Plot S polarization
+			plt.subplot(122)
+			cp = plt.contourf(k, energy, dataS,500,vmin=0,vmax=scalemax,cmap=cMap)
+			plt.xlabel(r'$K_{\parallel} ( m^{-7})$',size=20)
+			plt.ylabel('Energy (eV)',size=20)
+			plt.title('S-pol.')
+			
+			
+			plt.suptitle('Pp and Sp Intensity Dispersion Azi={}'.format(Az),fontsize=24)
 		
 		
 		#Define the colourmap and colorbar
@@ -1029,7 +1066,7 @@ class MM():
 		cb1 = mpl.colorbar.ColorbarBase(cax, norm=cNorm,cmap=cMap)
 		axes = plt.gca()
 		
-		plt.suptitle('Pp and Sp Intensity Dispersion Azi={}'.format(Az),fontsize=24)
+		#plt.suptitle('Pp and Sp Intensity Dispersion Azi={}'.format(Az),fontsize=24)
 		plt.show()	
 		
 		
@@ -1323,41 +1360,204 @@ class MM():
 		matplotlib.rcParams['font.size']=15
 		figure= plt.figure()
 		if what=='Lm':
-			for aoi in AOI:
-				for azi in Azi:
-					k=1
-					for i in range(0,4):
-						for j in range(0,4):
-							if i==0 and j==0:
-								plt.subplot(4,4,k)
-								plt.plot(sorted(list(self.Lm[aoi][azi].keys())),[self.Lm[aoi][azi][wl][i][j] for wl in self.Lm[aoi][azi].keys()],label='Azi={}'.format(azi))
-								plt.legend()
-								k+=1
-							else:
-								plt.subplot(4,4,k)
-								plt.plot(sorted(list(self.Lm[aoi][azi].keys())),[self.Lm[aoi][azi][wl][i][j] for wl in self.Lm[aoi][azi].keys()])
-								#plt.legend()
-								k+=1
-		
+			datas=self.Lm
+		elif what=='Lu':
+			datas=self.Lu
 		else:
-			for aoi in AOI:
-				for azi in Azi:
-					k=1
-					for i in range(0,4):
-						for j in range(0,4):
-							if i==0 and j==0:
-								plt.subplot(4,4,k)
-								plt.plot(sorted(list(self.data[aoi][azi].keys())),[self.data[aoi][azi][wl][i][j] for wl in self.data[aoi][azi].keys()],label='Azi={}'.format(azi))
-								plt.legend()
-								k+=1
-							else:
-								plt.subplot(4,4,k)
-								plt.plot(sorted(list(self.data[aoi][azi].keys())),[self.data[aoi][azi][wl][i][j] for wl in self.data[aoi][azi].keys()])
-								#plt.legend()
-								k+=1
+			datas=self.data
+		
+		for aoi in AOI:
+			for azi in Azi:
+				k=1
+				waves=sorted(list(datas[aoi][azi].keys()))
+				for i in range(0,4):
+					for j in range(0,4):
+						if i==0 and j==0:
+							plt.subplot(4,4,k)
+							plt.plot(waves,[datas[aoi][azi][wl][i][j] for wl in waves],label='Azi={}'.format(azi))
+							plt.legend()
+							k+=1
+						else:
+							plt.subplot(4,4,k)
+							plt.plot(waves,[datas[aoi][azi][wl][i][j] for wl in waves])
+							#plt.legend()
+							k+=1
 		figure.text(0.45,0.00,'Wavelength (nm)')
 		return
 					
 			
 					
+#******************************************************************************************************************************************#
+	def IntPlot(self,angle_of_inc,v_min,v_max):
+		'''
+		Produce a polar plot of the intensity measured at required angle_of_inc, plotted in the amplitude range defined by v_min v_max 
+		'''
+		intensity={}
+		
+		AOI=list(self.data.keys())
+		AZI=list(self.data[AOI[0]].keys())
+		wvl=list(self.data[AOI[0]][AZI[0]].keys())
+		
+		for aoi in AOI:
+			if aoi not in intensity.keys():
+				intensity[aoi]={}
+			for azi in AZI:
+				if azi not in intensity[aoi].keys():
+					intensity[aoi][azi]={}
+				for wl in wvl:
+					if wl not in intensity[aoi][azi].keys():
+						intensity[aoi][azi][wl]=0
+					intensity[aoi][azi][wl]=self.data[aoi][azi][wl][0][0]
+		
+		
+		THETA=sorted(list(intensity[angle_of_inc].keys()))
+		WVL=np.asarray(sorted(list(intensity[angle_of_inc][0].keys())))
+		tet=np.radians(THETA)
+		r,theta =np.meshgrid(WVL,tet)
+		Z=np.asarray([intensity[angle_of_inc][t][w] for t in THETA for w in WVL]).reshape(len(THETA),len(WVL))
+		
+		
+		mpl.rcParams['axes.labelsize']	= 18
+		mpl.rcParams['xtick.labelsize'] = 18
+		mpl.rcParams['ytick.labelsize'] = 18
+		mpl.rcParams['legend.fontsize'] = 18
+		mpl.rcParams['xtick.major.pad']='10'
+		mpl.rcParams['ytick.major.pad']='10'
+		
+		
+		
+		fig,ax=plt.subplots(subplot_kw=dict(projection='polar'))
+		zenticks = np.arange(500,1100,100)
+		ax.set_yticks(zenticks)
+		ax.yaxis.label.set_color('white')
+		ax.grid(True)
+							   
+		#ax.yaxis.set_major_formatter(plt.NullFormatter())
+		thetaticks = np.arange(0,360,45)
+		ax.set_thetagrids(thetaticks)
+		ax.contourf(theta,r,Z,100,cmap='jet',vmin=v_min,vmax=v_max)
+		plt.suptitle('OD10 Intensity',fontsize=30)
+		cax = fig.add_axes([0.75, 0.1, 0.03, 0.8])
+		cNorm = mpl.colors.Normalize(vmin=v_min, vmax=v_max)
+		cb1 = mpl.colorbar.ColorbarBase(cax, norm=cNorm,cmap='jet')
+		
 			
+		plt.show()
+		
+#******************************************************************************************************************************************#
+	def SimRead(self,path,wvl_min,wvl_max):
+		"""
+		Read Mueller matrix from a simple *.txt file
+		"""
+		AOI='0.000'
+		self.data[AOI]={}
+		with open(path,'r') as f:
+			for line in f:
+				line=re.split(r'\t+',line)
+				azi=float(line[1])
+				if azi not in self.data[AOI].keys():
+					self.data[AOI][azi]={}
+				wvl=float(line[0])
+				if wvl<=wvl_max and wvl >=wvl_min:
+					if wvl not in self.data[AOI][azi].keys():
+						self.data[AOI][azi][wvl]=[]
+					self.data[AOI][azi][wvl].append(1)
+					for i in line[2:17]:
+						self.data[AOI][azi][wvl].append(float(i))
+					self.data[AOI][azi][wvl]=np.asarray(self.data[AOI][azi][wvl]).reshape(4,4).T
+				
+				
+#******************************************************************************************************************************************#
+
+	def calcStokes(self,S,aoi):
+		"""
+		Calculate outcoming stokes vector given the Muller matrix and the initial stokes vector S of type(list),
+		at a given angle of incidence aoi
+		"""
+		S_out={}
+		S=np.array(S)
+		
+		if aoi not in S_out.keys():
+			S_out[aoi]={}
+		for azi in self.data[aoi].keys():
+			if azi not in S_out[aoi].keys():
+				S_out[aoi][azi]={}
+			for wl in self.data[aoi][azi].keys():
+				if wl not in S_out[aoi][azi].keys():
+					S_out[aoi][azi][wl]=np.zeros((1,4))
+				S_out[aoi][azi][wl]=self.data[aoi][azi][wl].dot(S)
+					
+		
+		Azimuthal=list(S_out[aoi].keys())
+		WL=list(S_out[aoi][Azimuthal[0]].keys())
+		
+		azim=np.radians(np.array(list(S_out[aoi].keys())))
+		zenith=np.array(list(S_out[aoi][Azimuthal[0]].keys()))
+		
+		fig, axs = plt.subplots(4, 1, subplot_kw=dict(projection='polar'))
+		
+		for i,ax in zip(range(0,4),iter(axs.reshape(-1))):
+			data=np.array([S_out[aoi][az][wl][i]/S_out[aoi][az][wl][0] for az in Azimuthal for wl in WL]).reshape(azim.size, zenith.size).T
+			
+			ax.contourf(azim, zenith, data, 50, vmin=-1,vmax=1,cmap='jet')
+			ax.grid(False)
+			ax.set_title('$S_{}$'.format(i))		   
+			ax.yaxis.set_major_formatter(plt.NullFormatter())
+			thetaticks = np.arange(0,360,180)
+			ax.set_thetagrids(thetaticks, frac=1.3)
+			minmax = np.asarray([np.min(data), np.max(data)])
+				
+		
+		cax = fig.add_axes([0.6, 0.1, 0.03, 0.8])
+		cNorm = mpl.colors.Normalize(vmin=-1, vmax=1)
+		cb1 = mpl.colorbar.ColorbarBase(cax, norm=cNorm,cmap='jet')
+		#plt.suptitle("%s plot at AOI-%s from %s to %s wvl."%(title,AOI,min(zenith),max(zenith)),fontsize=18)
+		plt.show()
+				
+		
+#******************************************************************************************************************************************#
+	
+	def calcStokesSlice(self,S,aoi,azi):
+		
+		S=np.array(S)
+		WL=list(self.data[aoi][azi].keys())
+		S_out=np.zeros((4,len(WL)))
+		for k, wl in enumerate(WL):
+			S_out[:,k]=self.data[aoi][azi][wl].dot(S)
+			
+		S_0=S_out[0,:]
+		plt.plot(WL,S_out[0,:]/S_0,'k',label=('$S_0$'))	
+		plt.plot(WL,S_out[1,:]/S_0,'r',label=('$S_1$'))
+		plt.plot(WL,S_out[2,:]/S_0,'g',label=('$S_2$'))
+		plt.plot(WL,S_out[3,:]/S_0,'b',label=('$S_3$'))
+		#p=np.sqrt(S_out[1,:]**2+S_out[2,:]**2+S_out[3,:]**2)/S_out[0,:]
+		#plt.plot(WL,p,'orange',label=('P'))
+		plt.xlabel('Wavelength (nm)')
+		plt.xlim([min(WL),max(WL)])
+		plt.legend()
+		plt.show()
+		
+#******************************************************************************************************************************************#
+	
+	def Pol_deg(self,S1,S2,aoi,azi):
+		
+		S1=np.array(S1)
+		S2=np.array(S2)
+		WL=sorted(list(self.data[aoi][azi].keys()))
+		S_out1=np.zeros((4,len(WL)))
+		S_out2=np.zeros((4,len(WL)))
+		for k, wl in enumerate(WL):
+			S_out1[:,k]=self.data[aoi][azi][wl].dot(S1)
+			S_out2[:,k]=self.data[aoi][azi][wl].dot(S2)
+			
+		S_01=S_out1[0,:]
+		S_02=S_out2[0,:]
+		
+		p1=np.sqrt(S_out1[1,:]**2+S_out1[2,:]**2+S_out1[3,:]**2)/S_out1[0,:]
+		p2=np.sqrt(S_out2[1,:]**2+S_out2[2,:]**2+S_out2[3,:]**2)/S_out2[0,:]
+		plt.plot(WL,p1,'r',label=('P-{}').format(''.join(str(S1))))
+		plt.plot(WL,p2,'b',label=('P-{}').format(''.join(str(S2))))
+		plt.xlabel('Wavelength (nm)')
+		plt.xlim([min(WL),max(WL)])
+		plt.legend()
+		plt.show()		
