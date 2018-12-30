@@ -2,10 +2,9 @@
 Small library, which allows fast visualization and further decomposition of measured Mueller Matrices.
 Written on Python3.
 
-Takes *.dat files created and formated by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, 
-with one or several angles of incidence and one or complete azimuthal rotation of the smaple with the step of N degrees. 
+Implements a basic class of Mueller matrix MM, which serves as a container for Mueller matrix data. The data can be aploaded from different sources such as *.dat files created and formated by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, or *.txt files with simulations, with one or several angles of incidence and one or complete azimuthal rotation of the smaple with the step of N degrees. 
 
-One can perform Cloude, Differential and Polar decomposition of the matrices and visualize the result in fast and convinient manner.
+Allows to easily perform Cloude, Differential and Polar decomposition of the matrices and visualize the result in fast and convinient manner.
 
 For example one can visualize the data at specific azimuthal or incidence angle of specific elements, or plot the complete Mueller matrix.
 ![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Depol.png)
@@ -15,6 +14,8 @@ Complete azimuthal rotation can also be easily visualized:
 ![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Fig2.png)
 
 The depolarization index, or degree of polarization can be easily calculated with dedicated fuctions. The outcomming Stokes vector can be calculated given an incoming Stokes vector. One can also check the physicality of the Mueller matrix and find its Hermitian representation.
+
+
 
 
 
