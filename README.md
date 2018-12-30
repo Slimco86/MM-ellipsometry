@@ -13,7 +13,14 @@ Complete azimuthal rotation can also be easily visualized:
 
 ![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/Fig2.png)
 
+In the same manner we can visualize the differential decomposition of the above azimuthal Mueller matrix:
+
+![alt text](https://github.com/Slimco86/MM-ellipsometry/blob/master/S4.png)
+
+
 The depolarization index, or degree of polarization can be easily calculated with dedicated fuctions. The outcomming Stokes vector can be calculated given an incoming Stokes vector. One can also check the physicality of the Mueller matrix and find its Hermitian representation.
+
+
 
 
 
