@@ -1,6 +1,6 @@
 # MM-ellipsometry
-Small library, which allows fast visualization and further decomposition of measured Mueller Matrices.
-Written on Python3.
+Library, which allows fast visualization and further decomposition of measured Mueller Matrices.
+Written in Python3.
 
 Implements a basic class of Mueller matrix MM, which serves as a container for Mueller matrix data. The data can be aploaded from different sources such as *.dat files created and formated by Woolam CompleteEASE ellipsometer containing the Mueller Matrix measurement data, or *.txt files with simulations, with one or several angles of incidence and one or complete azimuthal rotation of the smaple with the step of N degrees. 
 
